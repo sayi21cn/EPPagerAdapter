@@ -1,4 +1,4 @@
-﻿package com.alextam.eppageradapter.common;
+package com.alextam.eppageradapter.common;
 
 /**
  * Created by Alex Tam on 2015/4/17.
