@@ -74,7 +74,7 @@ public class MainActivity extends Activity implements EpViewPager.EpViewPagerSwi
         tvSwitchTitle.setText(advertisements.get(0).getName());
         epPagerAdapter.setEpPagerAdapterListener(this);
         mViewPager.setAdapter(epPagerAdapter);
-        mViewPager.setCurrentItem(4000);
+        mViewPager.setCurrentItem(advertisements.size() * 1000);
         mViewPager.setAdvertisementList(advertisements);
         mViewPager.setEpViewPagerSwitchListener(this);
     }
