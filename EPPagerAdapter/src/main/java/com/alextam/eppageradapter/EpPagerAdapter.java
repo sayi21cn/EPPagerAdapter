@@ -52,6 +52,11 @@ public class EpPagerAdapter extends PagerAdapter {
     private Context mContext;
     private MyApplication myApplication;
 
+    /** 中间分隔符 **/
+    public final static String ADV_SEPARATOR_MEDM = "@@";
+    /** 末位分隔符分隔符 **/
+    public final static String ADV_SEPARATOR_FINAL = "&&&";
+
     /** 焦点图的图片队列 **/
     private List<ImageView> imageViewList = new ArrayList<ImageView>();
 
@@ -77,21 +82,38 @@ public class EpPagerAdapter extends PagerAdapter {
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 
+    private EpPagerAdapterListener epPagerAdapterListener;
 
+    /** 是否成功捕获保存图片文件的路径 **/
+    private boolean ifAcquireSavePath = false;
 
+    public interface EpPagerAdapterListener
+    {
+        void onEpPagerAdapterSuccess();
+        void onEpPagerAdapterFail();
+        void onEpPagerAdapterClick(int position);
+    }
 
     public EpPagerAdapter(Context context,List<Advertisement> advertisementList)
     {
         this.mContext = context;
         this.advertisementList = advertisementList;
         initImageViewList();
-        if(FileUtil.initFolderSystem())
+
+        ifAcquireSavePath = FileUtil.initFolderSystem();
+
+        if(ifAcquireSavePath)
         {
             catchAdvImages();
         }
         else
         {	//由于空间不足或者无法建立存储空间,则不允许下载
-            Log.e("非法下载", "空间不足,或无法获取保存路径");
+            Log.e("EpPagerAdapter error", "There is not enough space to save pictures or it can not acquire path"
+                    + "to save pictures. ");
+
+            if(epPagerAdapterListener != null)
+                epPagerAdapterListener.onEpPagerAdapterFail();
+            catchAdvImages();
         }
     }
 
@@ -118,13 +140,22 @@ public class EpPagerAdapter extends PagerAdapter {
                 imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 imageView.setImageResource(R.drawable.pic_default);
                 imageViewList.add(imageView);
+                final int index = i;
+                imageView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(epPagerAdapterListener != null)
+                            epPagerAdapterListener.onEpPagerAdapterClick(index % advertisementList.size());
+                    }
+                });
             }
         }
     }
 
 
     /**
-     * 更新队列中的ImageView
+     * Update a imageview of ImageView List.
+     * <br>更新队列中的ImageView
      * @param position	显示的ImageView
      * @param bmp 下载后的图片
      */
@@ -194,7 +225,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 先去本地查找该图片,如果不存在就开启线程下载焦点图
+     * Go to catch picture file in storage firstly.If fail,it would go to download pictures.
+     * <br>先去本地查找该图片,如果不存在就开启线程下载焦点图
      */
     private void catchAdvImages()
     {
@@ -205,9 +237,11 @@ public class EpPagerAdapter extends PagerAdapter {
             //这里仅提供一种思路,简单的实现方式. 具体格式和保存方式可根据需求来实现.
             //格式: 焦点图名@@跳转链接地址@@焦点图下载地址&&&焦点图名@@跳转链接地址@@焦点图下载地址...
             if(i == 0){
-                advStr.append(entity.getName()+"@@"+entity.getUrl()+"@@"+entity.getImageUrl());
+                advStr.append(entity.getName()+ ADV_SEPARATOR_MEDM +entity.getUrl()+
+                        ADV_SEPARATOR_MEDM +entity.getImageUrl());
             }else{
-                advStr.append("&&&" + entity.getName()+"@@"+entity.getUrl()+"@@"+entity.getImageUrl());
+                advStr.append(ADV_SEPARATOR_FINAL + entity.getName()+ ADV_SEPARATOR_MEDM +
+                        entity.getUrl()+ ADV_SEPARATOR_MEDM +entity.getImageUrl());
             }
         }
 
@@ -218,11 +252,11 @@ public class EpPagerAdapter extends PagerAdapter {
         if(advPathInfoStr != null && !advPathInfoStr.trim().equals(""))
         {
             clearList(advPathInfoList);
-            String[] pathArr = advPathInfoStr.split("&&&");
+            String[] pathArr = advPathInfoStr.split(ADV_SEPARATOR_FINAL);
             String[] pathInfoArr;
             for(int p=0;p<pathArr.length;p++){
                 AdvFilePathInfo pathEntity = new AdvFilePathInfo();
-                pathInfoArr = pathArr[p].split("@@");
+                pathInfoArr = pathArr[p].split(ADV_SEPARATOR_MEDM);
 
                 try {
                     if(pathInfoArr.length == 3){
@@ -272,7 +306,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 当数据无变化,调用该方法更新
+     * If data is not changed,use this method to update ImageView list.
+     * <br>当数据无变化,调用该方法更新
      * @param list
      */
     private void updateListByDefault(List<AdvFilePathInfo> list)
@@ -325,7 +360,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 通过下载更新图片
+     * Update ImageView list by downloading pictures.
+     * <br>通过下载更新图片
      */
     private void updateListByDownLoad()
     {
@@ -350,16 +386,6 @@ public class EpPagerAdapter extends PagerAdapter {
 
                         appendAdvPathInfoSBuilder(advPathInfoSBuilder, advPathInfoMap.get(imageDownUrl).getFilePath(),
                                 advPathInfoMap.get(imageDownUrl).getFileName(), advPathInfoMap.get(imageDownUrl).getFileDownUrl());
-//						if(advPathInfoSBuilder == null || advPathInfoSBuilder.length() < 1)
-//						{
-//							advPathInfoSBuilder.append(advPathInfoMap.get(imageDownUrl).getFilePath() +"@@"
-//									+ advPathInfoMap.get(imageDownUrl).getFileName() + "@@"+ advPathInfoMap.get(imageDownUrl).getFileDownUrl());
-//						}
-//						else
-//						{
-//							advPathInfoSBuilder.append("&&&" + advPathInfoMap.get(imageDownUrl).getFilePath() +"@@"
-//									+ advPathInfoMap.get(imageDownUrl).getFileName() + "@@"+ advPathInfoMap.get(imageDownUrl).getFileDownUrl());
-//						}
                         setAdapterState();
                     }
                     else
@@ -385,7 +411,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 下载器
+     * Task for downloading and saving picture file.
+     * <br>下载器 - 下载并保存图片文件.
      * @author Alex Tam
      *
      */
@@ -435,21 +462,22 @@ public class EpPagerAdapter extends PagerAdapter {
             if(bitmap != null)
             {
                 imageView.setImageBitmap(bitmap);
+                if(ifAcquireSavePath)
+                {
+                    //保存至本地
+                    try {
+                        String filePath = FileUtil.saveAdvPicture(mContext, bitmap, fileName);
 
-                //保存至本地
-                try {
-                    String filePath = FileUtil.saveAdvPicture(mContext, bitmap, fileName);
+                        appendAdvPathInfoSBuilder(advPathInfoSBuilder, filePath, fileName, imageDownUrl);
+                        setAdapterState();
 
-                    appendAdvPathInfoSBuilder(advPathInfoSBuilder, filePath, fileName, imageDownUrl);
-                    setAdapterState();
-
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                        appendAdvPathInfoSBuilder(advPathInfoSBuilder, "null-filepath", fileName, imageDownUrl);
+                        setAdapterState();
+                    }
                 }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    appendAdvPathInfoSBuilder(advPathInfoSBuilder, "null-filepath", fileName, imageDownUrl);
-                    setAdapterState();
-                }
-
             }
             else
             {
@@ -486,7 +514,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 监听图片就绪状态
+     * Set monitor to tasks.
+     * <br>监听图片就绪状态
      */
     private void setAdapterState()
     {
@@ -502,7 +531,8 @@ public class EpPagerAdapter extends PagerAdapter {
 
 
     /**
-     * 停止所有下载任务
+     * Stop running tasks.
+     * <br>停止所有下载任务
      */
     public void cancelAllTask()
     {
@@ -515,7 +545,8 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 该方法获取所有焦点图是否到位就绪
+     * Know if finish catching picture files.
+     * <br>该方法获取所有焦点图是否到位就绪
      * @return
      */
     public boolean getAdapterState()
@@ -524,17 +555,19 @@ public class EpPagerAdapter extends PagerAdapter {
     }
 
     /**
-     * 当Activity跳转时,想停止后台下载的任务,可调用该方法
+     * Stop catching picture files when you need in case of jumping to a new Activity or other occasions.
+     * <br>当Activity跳转时,想停止后台下载的任务,可调用该方法
      */
-    public void stop()
+    public void stopCatch()
     {
         cancelAllTask();
     }
 
     /**
-     * 可调用该方法检测当前焦点图是否全部就绪,如果没有,则将还没有下载的图片进行下载
+     * Start to catch picture files by reading in storage or internet.
+     * <br>可调用该方法检测当前焦点图是否全部就绪,如果没有,则将还没有下载的图片进行下载
      */
-    public void start()
+    public void startCatch()
     {
         catchAdvImages();
     }
@@ -544,16 +577,18 @@ public class EpPagerAdapter extends PagerAdapter {
     {
         if(advPathInfoSBuilder == null || advPathInfoSBuilder.length() < 1)
         {
-            advPathInfoSBuilder.append(filePath +"@@" + fileName + "@@"+ fileDownUrl);
+            advPathInfoSBuilder.append(filePath + ADV_SEPARATOR_MEDM + fileName + ADV_SEPARATOR_MEDM + fileDownUrl);
         }
         else
         {
-            advPathInfoSBuilder.append("&&&" + filePath +"@@" + fileName + "@@"+ fileDownUrl);
+            advPathInfoSBuilder.append(ADV_SEPARATOR_FINAL + filePath + ADV_SEPARATOR_MEDM +
+                    fileName + ADV_SEPARATOR_MEDM + fileDownUrl);
         }
     }
 
     /**
-     * 清理多余的图片文件
+     * Clear invalid picture files.
+     * <br>清理多余的图片文件
      */
     public void deleteCacheADS()
     {
@@ -570,10 +605,10 @@ public class EpPagerAdapter extends PagerAdapter {
                         String advPathInfoStr = myApplication.getAdvPathInfo();
                         if(advPathInfoStr != null && !advPathInfoStr.trim().equals(""))
                         {
-                            String[] pathArr = advPathInfoStr.split("&&&");
+                            String[] pathArr = advPathInfoStr.split(ADV_SEPARATOR_FINAL);
                             String[] pathInfoArr;
                             for(int p=0;p<pathArr.length;p++){
-                                pathInfoArr = pathArr[p].split("@@");
+                                pathInfoArr = pathArr[p].split(ADV_SEPARATOR_MEDM);
                                 realFilePaths.add(pathInfoArr[0]);
                                 Log.i("打印读取map数据", " filePath = "+pathInfoArr[0] + "  fileName = "+pathInfoArr[1] + "  imageDownUrl = "+pathInfoArr[2]);
                             }
@@ -600,6 +635,11 @@ public class EpPagerAdapter extends PagerAdapter {
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void setEpPagerAdapterListener(EpPagerAdapterListener listener)
+    {
+        this.epPagerAdapterListener = listener;
     }
 
 }
