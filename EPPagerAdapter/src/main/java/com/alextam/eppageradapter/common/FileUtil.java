@@ -96,22 +96,28 @@ public class FileUtil {
     public static boolean initFolderSystem()
     {
         boolean ifHaveDownFolder = false;
-        String ALBUM_PATH = getSavePath() + FileUtil.SAVE_ROOT_PATH;
+        try {
+            String ALBUM_PATH = getSavePath() + FileUtil.SAVE_ROOT_PATH;
 
-        if(ALBUM_PATH != null)
-        {
-            File dirFile = new File(ALBUM_PATH);
-            if (!dirFile.exists()) { // 若不存在则创建
-                dirFile.mkdir();
-            }
+            if(ALBUM_PATH != null)
+            {
+                File dirFile = new File(ALBUM_PATH);
+                if (!dirFile.exists()) { // 若不存在则创建
+                    dirFile.mkdir();
+                }
 
-            // 存放首页轮播的图片
-            String ALBUM_PATH1 = dirFile + FileUtil.SAVE_ROOT_PATH_ADS;
-            File dirFile1 = new File(ALBUM_PATH1);
-            if (!dirFile1.exists()) {
-                dirFile1.mkdir();
+                // 存放首页轮播的图片
+                String ALBUM_PATH1 = dirFile + FileUtil.SAVE_ROOT_PATH_ADS;
+                File dirFile1 = new File(ALBUM_PATH1);
+                if (!dirFile1.exists()) {
+                    dirFile1.mkdir();
+                }
+                ifHaveDownFolder = true;
             }
-            ifHaveDownFolder = true;
+            return ifHaveDownFolder;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
         return ifHaveDownFolder;
     }
@@ -132,6 +138,35 @@ public class FileUtil {
         outStream.close();
         inStream.close();
         return outStream.toByteArray();
+    }
+
+    /**
+     * @解释
+     * 空间大小计算:如返回long值为1562226688(byte),那么1562226688/1024/1024/1024 约等于1.45G
+     * 判断剩余空间<br>参数filePath,必须是手机保存的根目录地址,如/mnt/sdcard/,/mnt/sdcard2/等
+     * @param filePath
+     * @return
+     */
+    public static long getFileFreeSpace(String filePath){
+        //针对已root的机型
+//		File file = new File(filePath);
+//		return file.getFreeSpace();
+        File file = new File(filePath);
+        final StatFs stats = new StatFs(file.getPath());
+        return (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
+    }
+
+
+    public static int getInputStreamSize(InputStream in)
+    {
+        try {
+            if(in != null)
+                return in.available();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
 }
