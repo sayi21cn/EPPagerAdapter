@@ -1,4 +1,4 @@
-package com.alextam.eppageradapter;
+﻿package com.alextam.eppageradapter;
 
 
 import android.content.Context;
@@ -37,7 +37,7 @@ public class EpViewPager extends ViewPager implements View.OnTouchListener {
     /** item的切换时长 **/
     private int TIME_SWITCH = 4000;
 
-
+    
     /**
      * EpViewPagerSwitchListener would be used in onPageSelected(int position) of {@link MyPageChangeListener}.
      * <br>EpViewPagerSwitchListener接口会在MyPageChangeListener的onPageSelected(int position)方法中被回调.
