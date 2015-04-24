@@ -1,4 +1,4 @@
-package com.alextam.eppageradapter;
+﻿package com.alextam.eppageradapter;
 
 import android.app.Activity;
 import android.os.Handler;
@@ -6,6 +6,7 @@ import android.os.Message;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -118,7 +119,7 @@ public class MainActivity extends Activity implements EpViewPager.EpViewPagerSwi
      */
     private void setDotImageViews()
     {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(12, 12);  // , 1是可选写的
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp2px(10), dp2px(10));  // , 1是可选写的
         lp.setMargins(2, 2, 5, 5);
         for (int i = 0; i < advertisements.size(); i++) {
             dotImage = new ImageView(MainActivity.this);
@@ -133,6 +134,12 @@ public class MainActivity extends Activity implements EpViewPager.EpViewPagerSwi
             }
             dotGroup.addView(dotImageViews[i]);
         }
+    }
+
+    private int dp2px(int dpValue)
+    {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpValue, getResources().getDisplayMetrics()));
+
     }
 
     @Override
